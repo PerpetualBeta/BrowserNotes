@@ -119,6 +119,11 @@ final class HUDKeyPanel: NSPanel {
     override var canBecomeKey: Bool { true }
 
     override func keyDown(with event: NSEvent) {
+        // Let text fields handle their own key events (backspace, typing, etc.)
+        if firstResponder is NSTextView {
+            super.keyDown(with: event)
+            return
+        }
         let hasCmd = event.modifierFlags.contains(.command)
         switch event.keyCode {
         case 126: hudDelegate?.moveSelectionUp()
