@@ -1,0 +1,4 @@
+.build/
+_BuildOutput/
+.DS_Store
+*.swp
