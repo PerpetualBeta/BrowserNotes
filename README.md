@@ -8,9 +8,15 @@ A macOS menu bar app that lets you attach notes to any web page in any browser. 
 
 ## Installation
 
-1. Double-click `BrowserNotes.app` to launch it
-2. A globe icon appears in the menu bar
-3. Grant Accessibility permission when prompted
+Two formats on every release — both signed and notarised, pick whichever suits:
+
+- **[Installer (`.pkg`)](https://github.com/PerpetualBeta/BrowserNotes/releases/latest/download/BrowserNotes.pkg)** — recommended for first-time installs. Double-click to run; macOS Installer places the app in `/Applications` without quarantine or App Translocation.
+- **[Download (`.zip`)](https://github.com/PerpetualBeta/BrowserNotes/releases/latest)** — unzip and drag `BrowserNotes.app` to your Applications folder.
+
+After installation:
+
+1. Launch Browser Notes — a globe icon appears in the menu bar
+2. Grant Accessibility permission when prompted
 
 ## How It Works
 
