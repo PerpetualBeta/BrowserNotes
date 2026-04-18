@@ -38,6 +38,7 @@ final class NoteStore: @unchecked Sendable {
 
             // Migrate from old schema if colour column exists
             migrateFromOldSchema()
+            renormaliseAllURLs()
             rebuildURLCache()
         }
     }
@@ -238,13 +239,44 @@ final class NoteStore: @unchecked Sendable {
 
     func normaliseURL(_ url: String) -> String {
         var u = url
+        // Strip fragment.
         if let fragIdx = u.firstIndex(of: "#") { u = String(u[u.startIndex..<fragIdx]) }
-        if u.hasSuffix("/") && u.count > 1 {
-            let withoutScheme = u.replacingOccurrences(of: "https://", with: "")
-                                 .replacingOccurrences(of: "http://", with: "")
-            if withoutScheme.filter({ $0 == "/" }).count > 1 { u = String(u.dropLast()) }
+        // Strip trailing slashes. Many SPAs rewrite the URL bar via history.replaceState
+        // to add or remove a trailing slash for aesthetics — which made the same page
+        // hash to different keys across polls and the page-notes HUD would flicker-then-
+        // vanish. Collapsing all trailing slashes fixes that. The "://" guard keeps us
+        // from ever reducing past the scheme itself.
+        while u.hasSuffix("/"), !u.hasSuffix("://") {
+            u = String(u.dropLast())
         }
         return u
+    }
+
+    /// Walks the notes table and rewrites any URL that doesn't match the current
+    /// normalisation rules. Idempotent — safe to call on every open(). Keeps the
+    /// DB in lock-step with whatever `normaliseURL` does today, so a rule change
+    /// doesn't orphan existing notes saved under the old form.
+    private func renormaliseAllURLs() {
+        guard let db else { return }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "SELECT id, url FROM notes", -1, &stmt, nil) == SQLITE_OK else { return }
+        var updates: [(Int64, String)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let id = sqlite3_column_int64(stmt, 0)
+            let url = String(cString: sqlite3_column_text(stmt, 1))
+            let norm = normaliseURL(url)
+            if norm != url { updates.append((id, norm)) }
+        }
+        sqlite3_finalize(stmt)
+
+        for (id, norm) in updates {
+            var up: OpaquePointer?
+            guard sqlite3_prepare_v2(db, "UPDATE notes SET url = ? WHERE id = ?", -1, &up, nil) == SQLITE_OK else { continue }
+            sqlite3_bind_text(up, 1, (norm as NSString).utf8String, -1, nil)
+            sqlite3_bind_int64(up, 2, id)
+            sqlite3_step(up)
+            sqlite3_finalize(up)
+        }
     }
 }
 

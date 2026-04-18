@@ -65,7 +65,7 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
     private func createPanel() {
         let p = HUDKeyPanel(
             contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight),
-            styleMask: [.nonactivatingPanel, .titled, .fullSizeContentView],
+            styleMask: [.nonactivatingPanel, .titled, .fullSizeContentView, .resizable],
             backing: .buffered, defer: false
         )
         p.isFloatingPanel = true
@@ -78,6 +78,7 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
         p.hasShadow = true
         p.hidesOnDeactivate = false
         p.hudDelegate = self
+        p.minSize = NSSize(width: 360, height: 240)
 
         let bg = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight))
         bg.material = .underWindowBackground
@@ -86,6 +87,7 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
         bg.wantsLayer = true
         bg.layer?.cornerRadius = 12
         bg.layer?.masksToBounds = true
+        bg.autoresizingMask = [.width, .height]
 
         searchField = NSTextField(frame: NSRect(x: 16, y: panelHeight - 52, width: panelWidth - 32, height: 28))
         searchField.placeholderString = "Filter notes..."
@@ -97,15 +99,18 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
         searchField.delegate = self
         searchField.target = self
         searchField.action = #selector(searchAction)
+        searchField.autoresizingMask = [.width, .minYMargin]
 
         let sep = NSBox(frame: NSRect(x: 16, y: panelHeight - 58, width: panelWidth - 32, height: 1))
         sep.boxType = .separator
+        sep.autoresizingMask = [.width, .minYMargin]
 
         countLabel = NSTextField(labelWithString: "")
         countLabel.frame = NSRect(x: 16, y: 8, width: panelWidth - 32, height: 16)
         countLabel.font = .systemFont(ofSize: 10)
         countLabel.textColor = .tertiaryLabelColor
         countLabel.alignment = .right
+        countLabel.autoresizingMask = [.width, .maxYMargin]
 
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("note"))
         column.width = panelWidth - 16
@@ -117,6 +122,7 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
         tableView.rowHeight = rowHeight
         tableView.intercellSpacing = NSSize(width: 0, height: 2)
         tableView.selectionHighlightStyle = .regular
+        tableView.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle
         tableView.dataSource = self
         tableView.delegate = self
         tableView.doubleAction = #selector(activateSelected)
@@ -127,6 +133,7 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
         scrollView.hasVerticalScroller = true
         scrollView.drawsBackground = false
         scrollView.autohidesScrollers = true
+        scrollView.autoresizingMask = [.width, .height]
 
         bg.addSubview(searchField)
         bg.addSubview(sep)
@@ -151,16 +158,18 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
             if let pv = posValue, let sv = sizeValue {
                 AXValueGetValue(pv as! AXValue, .cgPoint, &pos)
                 AXValueGetValue(sv as! AXValue, .cgSize, &size)
-                let x = pos.x + size.width / 2 - panelWidth / 2
-                let y = screen.frame.height - pos.y - size.height / 2 - panelHeight / 2
+                let current = panel?.frame.size ?? NSSize(width: panelWidth, height: panelHeight)
+                let x = pos.x + size.width / 2 - current.width / 2
+                let y = screen.frame.height - pos.y - size.height / 2 - current.height / 2
                 panel?.setFrameOrigin(NSPoint(x: x, y: y))
                 return
             }
         }
         if let screen = NSScreen.main {
+            let current = panel?.frame.size ?? NSSize(width: panelWidth, height: panelHeight)
             panel?.setFrameOrigin(NSPoint(
-                x: screen.visibleFrame.midX - panelWidth / 2,
-                y: screen.visibleFrame.midY - panelHeight / 2
+                x: screen.visibleFrame.midX - current.width / 2,
+                y: screen.visibleFrame.midY - current.height / 2
             ))
         }
     }
@@ -264,6 +273,10 @@ extension NotesBrowserHUD: NSTextFieldDelegate {
 
 extension NotesBrowserHUD: NSTableViewDataSource, NSTableViewDelegate {
     func numberOfRows(in tableView: NSTableView) -> Int { filteredNotes.count }
+
+    func tableViewSelectionDidChange(_ notification: Notification) {
+        selectedIndex = tableView.selectedRow
+    }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard row < filteredNotes.count else { return nil }
