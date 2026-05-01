@@ -90,11 +90,27 @@ final class BrowserNotesEngine {
     func updateNotesBrowserHotkey(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) {
         _notesBrowserKeyCode = keyCode
         _notesBrowserModifiers = modifiers
+        republishHotkeys()
     }
 
     func updateAddNoteHotkey(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) {
         _addNoteKeyCode = keyCode
         _addNoteModifiers = modifiers
+        republishHotkeys()
+    }
+
+    /// Publish current bindings to the JorvikKit registry. Both are browser-only.
+    private func republishHotkeys() {
+        JorvikHotkeyRegistry.publish([
+            JorvikHotkey(actionTitle: "Open Notes Browser",
+                         keyCode: _notesBrowserKeyCode,
+                         modifiers: _notesBrowserModifiers,
+                         activeContext: .browser),
+            JorvikHotkey(actionTitle: "Add Note for Page",
+                         keyCode: _addNoteKeyCode,
+                         modifiers: _addNoteModifiers,
+                         activeContext: .browser),
+        ])
     }
 
     func start() {
@@ -113,6 +129,8 @@ final class BrowserNotesEngine {
             _addNoteKeyCode = UInt16(UserDefaults.standard.integer(forKey: "addNoteKeyCode"))
             _addNoteModifiers = NSEvent.ModifierFlags(rawValue: UInt(UserDefaults.standard.integer(forKey: "addNoteModifiers")))
         }
+
+        republishHotkeys()
 
         NoteStore.shared.open()
 
