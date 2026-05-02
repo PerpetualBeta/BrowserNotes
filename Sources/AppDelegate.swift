@@ -54,20 +54,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        UserDefaults.standard.register(defaults: ["menuBarPillEnabled": true])
+        migrateLegacyPillColorKey()
+
         NSApp.setActivationPolicy(.accessory)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         updateIcon()
-        JorvikMenuBarPill.apply(to: statusItem.button!)
         updateChecker.checkOnSchedule()
 
         let menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu
-
-        DistributedNotificationCenter.default.addObserver(
-            self, selector: #selector(appearanceChanged),
-            name: NSNotification.Name("AppleInterfaceThemeChangedNotification"), object: nil
-        )
 
         engine.start()
 
@@ -82,19 +79,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationWillTerminate(_ notification: Notification) { engine.stop() }
 
-    @objc private func appearanceChanged() {
-        if let button = statusItem.button { JorvikMenuBarPill.refresh(on: button) }
+    // One-shot removal of the user-chosen pill colour key from the old design.
+    // The new pill uses fixed grey/light colours; the key is dead weight.
+    private func migrateLegacyPillColorKey() {
+        let migrated = "didMigratePillColorV2"
+        if UserDefaults.standard.bool(forKey: migrated) { return }
+        UserDefaults.standard.removeObject(forKey: "menuBarPillColor")
+        UserDefaults.standard.set(true, forKey: migrated)
     }
 
-    func refreshPill() {
-        if let button = statusItem.button { JorvikMenuBarPill.apply(to: button) }
-    }
+    func refreshPill() { updateIcon() }
 
     private func updateIcon() {
-        if let image = NSImage(systemSymbolName: "highlighter", accessibilityDescription: "Browser Notes") {
-            image.isTemplate = true
-            statusItem.button?.image = image
-        }
+        statusItem.button?.image = JorvikMenuBarPill.icon(
+            symbolName: "highlighter",
+            accessibilityDescription: "Browser Notes"
+        )
     }
 
     func notesBrowserShortcutDisplayString() -> String {
