@@ -2,6 +2,7 @@ import AppKit
 import ApplicationServices
 import SwiftUI
 import ServiceManagement
+import Sparkle
 
 @MainActor
 @Observable
@@ -10,6 +11,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     let engine = BrowserNotesEngine()
     let updateChecker = JorvikUpdateChecker(repoName: "BrowserNotes")
+
+    // @ObservationIgnored — @Observable's macro can't transform `lazy`,
+    // and Sparkle's controller isn't observable state anyway.
+    @ObservationIgnored let sparkleUserDriverDelegate = BrowserNotesUserDriverDelegate()
+    @ObservationIgnored lazy var sparkleUpdater = SPUStandardUpdaterController(
+        startingUpdater: true,
+        updaterDelegate: nil,
+        userDriverDelegate: sparkleUserDriverDelegate
+    )
 
     var notesBrowserKeyCode: UInt16 = {
         let val = UserDefaults.standard.object(forKey: "notesBrowserKeyCode")
@@ -59,7 +69,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSApp.setActivationPolicy(.accessory)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         updateIcon()
-        updateChecker.checkOnSchedule()
+        // Sparkle handles update polling now. JorvikUpdateChecker instance
+        // remains because JorvikSettingsView.showWindow still requires one
+        // as a parameter, pending JorvikKit retirement (§11.5).
+        _ = sparkleUpdater  // forces lazy init so Sparkle starts at launch
+        // updateChecker.checkOnSchedule()  // disabled — Sparkle owns this now
 
         let menu = NSMenu()
         menu.delegate = self
@@ -118,6 +132,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         actions.append(JorvikMenuBuilder.ActionItem(
             title: "Import Notes\u{2026}", action: #selector(importNotes), target: self, keyEquivalent: ""
         ))
+        actions.append(JorvikMenuBuilder.ActionItem(title: "-", action: #selector(noop), target: self))
+        actions.append(JorvikMenuBuilder.ActionItem(
+            title: "Check for Updates\u{2026}", action: #selector(checkForUpdates(_:)), target: self
+        ))
         let built = JorvikMenuBuilder.buildMenu(
             appName: "Browser Notes",
             aboutAction: #selector(openAbout), settingsAction: #selector(openSettings),
@@ -128,6 +146,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func toggleEnabled() { engine.isEnabled.toggle(); updateIcon() }
+    @objc func checkForUpdates(_ sender: Any?) { sparkleUpdater.checkForUpdates(sender) }
     @objc private func noop() {}
 
     @objc private func exportNotes() {
@@ -178,5 +197,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         JorvikSettingsView.showWindow(appName: "Browser Notes", updateChecker: updateChecker) {
             BrowserNotesSettingsContent(delegate: delegate)
         }
+    }
+}
+
+/// LSUIElement apps don't auto-activate when they present windows, so
+/// Sparkle's update dialogs would appear behind whatever app is currently
+/// key. This brings Browser Notes frontmost just before each modal.
+final class BrowserNotesUserDriverDelegate: NSObject, SPUStandardUserDriverDelegate {
+    func standardUserDriverWillShowModalAlert() {
+        NSApp.activate(ignoringOtherApps: true)
     }
 }
