@@ -306,34 +306,43 @@ final class PageNotesHUD: NSObject {
     }
 
     private func positionPanel(browserPID: pid_t) {
-        let axApp = AXUIElementCreateApplication(browserPID)
-        var windowVal: CFTypeRef?
-        if AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &windowVal) == .success,
-           let screen = NSScreen.main {
-            var pos = CGPoint.zero
-            var size = CGSize.zero
-            var posValue: CFTypeRef?
-            var sizeValue: CFTypeRef?
-            AXUIElementCopyAttributeValue(windowVal as! AXUIElement, kAXPositionAttribute as CFString, &posValue)
-            AXUIElementCopyAttributeValue(windowVal as! AXUIElement, kAXSizeAttribute as CFString, &sizeValue)
-            if let pv = posValue, let sv = sizeValue {
-                AXValueGetValue(pv as! AXValue, .cgPoint, &pos)
-                AXValueGetValue(sv as! AXValue, .cgSize, &size)
-                let screenH = screen.frame.height
-                let panelH = panel?.frame.height ?? 200
-                let x = min(pos.x + size.width - panelWidth - 50,
-                            screen.visibleFrame.maxX - panelWidth - 10)
-                let y = screenH - pos.y - panelH - 120
-                panel?.setFrameOrigin(NSPoint(x: x, y: y))
-                return
-            }
+        let panelH = panel?.frame.height ?? 200
+        let margin: CGFloat = 10
+        // Empirical chrome height — tabs + URL bar + bookmarks. Skipped
+        // so the panel anchors to the top-right of the viewport, not
+        // the top-right of the browser window. Replace with an
+        // `AXWebArea` query later if browsers diverge significantly.
+        let chromeHeight: CGFloat = 120
+
+        if let browserFrame = JorvikWindowHelper.axFocusedWindowFrame(pid: browserPID) {
+            // Browser's actual screen — `NSScreen.main` would be the
+            // primary on Tahoe regardless of which display the browser
+            // lives on, which is what was pulling the panel back onto
+            // screen 1 in dual-display setups.
+            let browserScreen = JorvikWindowHelper.screenContaining(
+                NSPoint(x: browserFrame.midX, y: browserFrame.midY)
+            )
+            // Top-right of viewport, clamped to the browser's screen so
+            // the panel never spills off the right edge if the browser
+            // is wider than the display can accommodate.
+            let desiredX = browserFrame.maxX - panelWidth - 50
+            let x = min(desiredX, browserScreen.visibleFrame.maxX - panelWidth - margin)
+            // browserFrame.maxY is the AppKit-y of the browser's top
+            // edge; drop by the chrome height and the panel's own
+            // height to land the panel just inside the viewport.
+            let y = browserFrame.maxY - chromeHeight - panelH
+            panel?.setFrameOrigin(NSPoint(x: x, y: y))
+            return
         }
-        if let screen = NSScreen.main {
-            panel?.setFrameOrigin(NSPoint(
-                x: screen.visibleFrame.maxX - panelWidth - 50,
-                y: screen.visibleFrame.maxY - (panel?.frame.height ?? 200) - 120
-            ))
-        }
+
+        // Fallback when AX is unavailable: pin to the top-right of the
+        // mouse-bearing screen so the panel still appears somewhere
+        // reasonable rather than off-screen.
+        let fallbackScreen = JorvikWindowHelper.screenContaining(NSEvent.mouseLocation)
+        panel?.setFrameOrigin(NSPoint(
+            x: fallbackScreen.visibleFrame.maxX - panelWidth - 50,
+            y: fallbackScreen.visibleFrame.maxY - panelH - chromeHeight
+        ))
     }
 }
 

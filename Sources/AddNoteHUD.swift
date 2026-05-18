@@ -182,31 +182,22 @@ final class AddNoteHUD: NSObject {
     }
 
     private func positionPanel() {
-        let axApp = AXUIElementCreateApplication(browserPID)
-        var windowVal: CFTypeRef?
-        if AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &windowVal) == .success,
-           let screen = NSScreen.main {
-            var pos = CGPoint.zero
-            var size = CGSize.zero
-            var posValue: CFTypeRef?
-            var sizeValue: CFTypeRef?
-            AXUIElementCopyAttributeValue(windowVal as! AXUIElement, kAXPositionAttribute as CFString, &posValue)
-            AXUIElementCopyAttributeValue(windowVal as! AXUIElement, kAXSizeAttribute as CFString, &sizeValue)
-            if let pv = posValue, let sv = sizeValue {
-                AXValueGetValue(pv as! AXValue, .cgPoint, &pos)
-                AXValueGetValue(sv as! AXValue, .cgSize, &size)
-                let x = pos.x + size.width / 2 - panelWidth / 2
-                let y = screen.frame.height - pos.y - size.height / 2 - defaultHeight / 2
-                panel?.setFrameOrigin(NSPoint(x: x, y: y))
-                return
-            }
+        if let browserFrame = JorvikWindowHelper.axFocusedWindowFrame(pid: browserPID) {
+            // Centred on the browser window. AppKit-coord conversion uses
+            // the primary screen's height (handled in axFocusedWindowFrame)
+            // so this works whichever display the browser is on.
+            let x = browserFrame.midX - panelWidth / 2
+            let y = browserFrame.midY - defaultHeight / 2
+            panel?.setFrameOrigin(NSPoint(x: x, y: y))
+            return
         }
-        if let screen = NSScreen.main {
-            panel?.setFrameOrigin(NSPoint(
-                x: screen.visibleFrame.midX - panelWidth / 2,
-                y: screen.visibleFrame.midY - defaultHeight / 2
-            ))
-        }
+
+        // Fallback: centre on the mouse-bearing screen.
+        let fallbackScreen = JorvikWindowHelper.screenContaining(NSEvent.mouseLocation)
+        panel?.setFrameOrigin(NSPoint(
+            x: fallbackScreen.visibleFrame.midX - panelWidth / 2,
+            y: fallbackScreen.visibleFrame.midY - defaultHeight / 2
+        ))
     }
 
     @objc private func saveNote() {

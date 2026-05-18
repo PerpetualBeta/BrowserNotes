@@ -145,33 +145,24 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
     }
 
     private func positionPanel() {
-        let axApp = AXUIElementCreateApplication(browserPID)
-        var windowVal: CFTypeRef?
-        if AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &windowVal) == .success,
-           let screen = NSScreen.main {
-            var pos = CGPoint.zero
-            var size = CGSize.zero
-            var posValue: CFTypeRef?
-            var sizeValue: CFTypeRef?
-            AXUIElementCopyAttributeValue(windowVal as! AXUIElement, kAXPositionAttribute as CFString, &posValue)
-            AXUIElementCopyAttributeValue(windowVal as! AXUIElement, kAXSizeAttribute as CFString, &sizeValue)
-            if let pv = posValue, let sv = sizeValue {
-                AXValueGetValue(pv as! AXValue, .cgPoint, &pos)
-                AXValueGetValue(sv as! AXValue, .cgSize, &size)
-                let current = panel?.frame.size ?? NSSize(width: panelWidth, height: panelHeight)
-                let x = pos.x + size.width / 2 - current.width / 2
-                let y = screen.frame.height - pos.y - size.height / 2 - current.height / 2
-                panel?.setFrameOrigin(NSPoint(x: x, y: y))
-                return
-            }
+        let current = panel?.frame.size ?? NSSize(width: panelWidth, height: panelHeight)
+
+        if let browserFrame = JorvikWindowHelper.axFocusedWindowFrame(pid: browserPID) {
+            // Centred on the browser window. AX-to-AppKit conversion via
+            // the primary screen's height (handled in axFocusedWindowFrame)
+            // means this works on any display, not just the primary.
+            let x = browserFrame.midX - current.width / 2
+            let y = browserFrame.midY - current.height / 2
+            panel?.setFrameOrigin(NSPoint(x: x, y: y))
+            return
         }
-        if let screen = NSScreen.main {
-            let current = panel?.frame.size ?? NSSize(width: panelWidth, height: panelHeight)
-            panel?.setFrameOrigin(NSPoint(
-                x: screen.visibleFrame.midX - current.width / 2,
-                y: screen.visibleFrame.midY - current.height / 2
-            ))
-        }
+
+        // Fallback: centre on the mouse-bearing screen.
+        let fallbackScreen = JorvikWindowHelper.screenContaining(NSEvent.mouseLocation)
+        panel?.setFrameOrigin(NSPoint(
+            x: fallbackScreen.visibleFrame.midX - current.width / 2,
+            y: fallbackScreen.visibleFrame.midY - current.height / 2
+        ))
     }
 
     private func updateFilter() {
