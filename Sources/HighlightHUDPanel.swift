@@ -36,6 +36,10 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
 
         if panel == nil { createPanel() }
 
+        // Size to 80% of the browser window each open, so the Notes
+        // Browser scales with whatever the user's working in.
+        panel?.setContentSize(targetSize(browserPID: browserPID))
+
         searchField.stringValue = ""
         updateFilter()
         positionPanel()
@@ -92,7 +96,11 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
 
         // Leading inset clears the traffic-light cluster — the panel
         // uses .fullSizeContentView, so they sit inside the contentView.
-        searchField = NSTextField(frame: NSRect(x: 80, y: panelHeight - 52, width: panelWidth - 96, height: 28))
+        // Leading inset clears the traffic-light cluster, top inset
+        // drops the field below the titlebar row — the panel uses
+        // .fullSizeContentView so the traffic lights occupy the top
+        // ~28px of the contentView.
+        searchField = NSTextField(frame: NSRect(x: 80, y: panelHeight - 68, width: panelWidth - 96, height: 28))
         searchField.placeholderString = "Filter notes..."
         searchField.font = .systemFont(ofSize: 14)
         searchField.isBordered = false
@@ -104,7 +112,7 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
         searchField.action = #selector(searchAction)
         searchField.autoresizingMask = [.width, .minYMargin]
 
-        let sep = NSBox(frame: NSRect(x: 16, y: panelHeight - 58, width: panelWidth - 32, height: 1))
+        let sep = NSBox(frame: NSRect(x: 16, y: panelHeight - 74, width: panelWidth - 32, height: 1))
         sep.boxType = .separator
         sep.autoresizingMask = [.width, .minYMargin]
 
@@ -131,7 +139,7 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
         tableView.doubleAction = #selector(activateSelected)
         tableView.target = self
 
-        scrollView = NSScrollView(frame: NSRect(x: 8, y: 28, width: panelWidth - 16, height: panelHeight - 90))
+        scrollView = NSScrollView(frame: NSRect(x: 8, y: 28, width: panelWidth - 16, height: panelHeight - 106))
         scrollView.documentView = tableView
         scrollView.hasVerticalScroller = true
         scrollView.drawsBackground = false
@@ -145,6 +153,20 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
 
         p.contentView = bg
         panel = p
+    }
+
+    private func targetSize(browserPID: pid_t) -> NSSize {
+        if let browserFrame = JorvikWindowHelper.axFocusedWindowFrame(pid: browserPID) {
+            return NSSize(
+                width: max(360, browserFrame.width * 0.8),
+                height: max(240, browserFrame.height * 0.8)
+            )
+        }
+        let visible = JorvikWindowHelper.screenContaining(NSEvent.mouseLocation).visibleFrame
+        return NSSize(
+            width: max(360, visible.width * 0.8),
+            height: max(240, visible.height * 0.8)
+        )
     }
 
     private func positionPanel() {
