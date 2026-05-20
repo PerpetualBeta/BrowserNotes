@@ -102,9 +102,11 @@ Browser Notes uses Swift Package Manager. No Xcode project is required.
 ```bash
 git clone https://github.com/PerpetualBeta/BrowserNotes.git
 cd BrowserNotes
-./build.sh
-open _BuildOutput/BrowserNotes.app
+gmake build
+open .build/BrowserNotes.app
 ```
+
+Requires GNU Make 4.x — `brew install make` installs it as `gmake`.
 
 ---
 
