@@ -90,7 +90,9 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
         bg.layer?.masksToBounds = true
         bg.autoresizingMask = [.width, .height]
 
-        searchField = NSTextField(frame: NSRect(x: 16, y: panelHeight - 52, width: panelWidth - 32, height: 28))
+        // Leading inset clears the traffic-light cluster — the panel
+        // uses .fullSizeContentView, so they sit inside the contentView.
+        searchField = NSTextField(frame: NSRect(x: 80, y: panelHeight - 52, width: panelWidth - 96, height: 28))
         searchField.placeholderString = "Filter notes..."
         searchField.font = .systemFont(ofSize: 14)
         searchField.isBordered = false

@@ -36,12 +36,14 @@ enum HashtagPill {
     }
 
     /// Renders a single tag into a rounded pill image suitable for use
-    /// as an `NSTextAttachment` or in an `NSImageView`.
+    /// as an `NSTextAttachment` or in an `NSImageView`. Pill text is
+    /// uppercased and bold for legibility against the coloured fill.
     static func image(for tag: String, font: NSFont) -> NSImage {
         let bg = color(for: tag)
         let fg = textColor(on: bg)
-        let pillText = " \(displayTag(tag)) "
-        let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: fg]
+        let boldFont = NSFont.systemFont(ofSize: font.pointSize, weight: .bold)
+        let pillText = " \(displayTag(tag).uppercased()) "
+        let attrs: [NSAttributedString.Key: Any] = [.font: boldFont, .foregroundColor: fg]
         let textSize = (pillText as NSString).size(withAttributes: attrs)
         let pillSize = NSSize(width: ceil(textSize.width) + 10, height: ceil(textSize.height) + 4)
 
