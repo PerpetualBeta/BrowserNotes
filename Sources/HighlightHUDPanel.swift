@@ -22,6 +22,7 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
     private let panelWidth: CGFloat = 560
     private let panelHeight: CGFloat = 420
     private let rowHeight: CGFloat = 36
+    private let rowHeightWithPills: CGFloat = 54
 
     var isVisible: Bool { panel?.isVisible ?? false }
 
@@ -272,72 +273,89 @@ extension NotesBrowserHUD: NSTableViewDataSource, NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard row < filteredNotes.count else { return nil }
         let note = filteredNotes[row]
+        let tags = note.hashtags
+        let height = tags.isEmpty ? rowHeight : rowHeightWithPills
 
-        let cellID = NSUserInterfaceItemIdentifier("NoteBrowserCell")
-        let cell: NSTableCellView
-        if let reused = tableView.makeView(withIdentifier: cellID, owner: nil) as? NSTableCellView {
-            cell = reused
-        } else {
-            cell = NSTableCellView(frame: NSRect(x: 0, y: 0, width: tableColumn?.width ?? panelWidth - 16, height: rowHeight))
-            cell.identifier = cellID
+        // Variable per-row layout (favicon + optional pills) doesn't
+        // recycle cleanly, so build a fresh cell each call. The dataset
+        // is bounded (visible-rows-only) so the cost is negligible.
+        let cell = NSTableCellView(frame: NSRect(x: 0, y: 0, width: tableColumn?.width ?? panelWidth - 16, height: height))
 
-            let noteField = NSTextField(labelWithString: "")
-            noteField.tag = 1
-            noteField.font = .systemFont(ofSize: 13)
-            noteField.textColor = .labelColor
-            noteField.lineBreakMode = .byTruncatingTail
-            noteField.translatesAutoresizingMaskIntoConstraints = false
+        let faviconView = NSImageView(frame: .zero)
+        faviconView.imageScaling = .scaleProportionallyUpOrDown
+        faviconView.image = FaviconCache.placeholder
+        faviconView.translatesAutoresizingMaskIntoConstraints = false
+        FaviconCache.shared.image(forURL: note.url) { [weak faviconView] image in
+            if let image { faviconView?.image = image }
+        }
 
-            let urlField = NSTextField(labelWithString: "")
-            urlField.tag = 2
-            urlField.font = .systemFont(ofSize: 10)
-            urlField.textColor = .tertiaryLabelColor
-            urlField.lineBreakMode = .byTruncatingMiddle
-            urlField.translatesAutoresizingMaskIntoConstraints = false
+        let noteField = NSTextField(labelWithString: note.note)
+        noteField.font = .systemFont(ofSize: 13)
+        noteField.textColor = .labelColor
+        noteField.lineBreakMode = .byTruncatingTail
+        noteField.translatesAutoresizingMaskIntoConstraints = false
 
-            let deleteBtn = NSButton(frame: .zero)
-            deleteBtn.tag = 99
-            deleteBtn.bezelStyle = .inline
-            deleteBtn.isBordered = false
-            deleteBtn.image = NSImage(systemSymbolName: "trash", accessibilityDescription: "Delete")
-            deleteBtn.contentTintColor = .tertiaryLabelColor
-            deleteBtn.imageScaling = .scaleProportionallyDown
-            deleteBtn.target = self
-            deleteBtn.action = #selector(deleteButtonClicked(_:))
-            deleteBtn.translatesAutoresizingMaskIntoConstraints = false
+        let urlField = NSTextField(labelWithString: "\(shortenURL(note.url))  —  \(relativeTime(note.createdAt))")
+        urlField.font = .systemFont(ofSize: 10)
+        urlField.textColor = .tertiaryLabelColor
+        urlField.lineBreakMode = .byTruncatingMiddle
+        urlField.translatesAutoresizingMaskIntoConstraints = false
 
-            cell.addSubview(noteField)
-            cell.addSubview(urlField)
-            cell.addSubview(deleteBtn)
+        let deleteBtn = NSButton(frame: .zero)
+        deleteBtn.bezelStyle = .inline
+        deleteBtn.isBordered = false
+        deleteBtn.image = NSImage(systemSymbolName: "trash", accessibilityDescription: "Delete")
+        deleteBtn.contentTintColor = .tertiaryLabelColor
+        deleteBtn.imageScaling = .scaleProportionallyDown
+        deleteBtn.target = self
+        deleteBtn.action = #selector(deleteButtonClicked(_:))
+        deleteBtn.identifier = NSUserInterfaceItemIdentifier("\(row)")
+        deleteBtn.translatesAutoresizingMaskIntoConstraints = false
 
-            NSLayoutConstraint.activate([
-                deleteBtn.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
-                deleteBtn.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-                deleteBtn.widthAnchor.constraint(equalToConstant: 20),
-                deleteBtn.heightAnchor.constraint(equalToConstant: 20),
+        cell.addSubview(faviconView)
+        cell.addSubview(noteField)
+        cell.addSubview(urlField)
+        cell.addSubview(deleteBtn)
 
-                noteField.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 8),
-                noteField.trailingAnchor.constraint(equalTo: deleteBtn.leadingAnchor, constant: -4),
-                noteField.topAnchor.constraint(equalTo: cell.topAnchor, constant: 3),
+        var constraints: [NSLayoutConstraint] = [
+            faviconView.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 8),
+            faviconView.topAnchor.constraint(equalTo: cell.topAnchor, constant: 6),
+            faviconView.widthAnchor.constraint(equalToConstant: 16),
+            faviconView.heightAnchor.constraint(equalToConstant: 16),
 
-                urlField.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 8),
-                urlField.trailingAnchor.constraint(equalTo: deleteBtn.leadingAnchor, constant: -4),
-                urlField.topAnchor.constraint(equalTo: noteField.bottomAnchor, constant: 0),
+            deleteBtn.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
+            deleteBtn.topAnchor.constraint(equalTo: cell.topAnchor, constant: 6),
+            deleteBtn.widthAnchor.constraint(equalToConstant: 20),
+            deleteBtn.heightAnchor.constraint(equalToConstant: 20),
+
+            noteField.leadingAnchor.constraint(equalTo: faviconView.trailingAnchor, constant: 8),
+            noteField.trailingAnchor.constraint(equalTo: deleteBtn.leadingAnchor, constant: -4),
+            noteField.topAnchor.constraint(equalTo: cell.topAnchor, constant: 3),
+
+            urlField.leadingAnchor.constraint(equalTo: faviconView.trailingAnchor, constant: 8),
+            urlField.trailingAnchor.constraint(equalTo: deleteBtn.leadingAnchor, constant: -4),
+            urlField.topAnchor.constraint(equalTo: noteField.bottomAnchor, constant: 0),
+        ]
+
+        if !tags.isEmpty {
+            let pillField = NSTextField(labelWithAttributedString: HashtagPill.attributedPills(for: tags, font: .systemFont(ofSize: 9)))
+            pillField.lineBreakMode = .byTruncatingTail
+            pillField.maximumNumberOfLines = 1
+            pillField.translatesAutoresizingMaskIntoConstraints = false
+            cell.addSubview(pillField)
+            constraints.append(contentsOf: [
+                pillField.leadingAnchor.constraint(equalTo: faviconView.trailingAnchor, constant: 8),
+                pillField.trailingAnchor.constraint(equalTo: deleteBtn.leadingAnchor, constant: -4),
+                pillField.topAnchor.constraint(equalTo: urlField.bottomAnchor, constant: 2),
             ])
         }
 
-        if let nf = cell.viewWithTag(1) as? NSTextField {
-            nf.stringValue = note.note
-        }
-        if let uf = cell.viewWithTag(2) as? NSTextField {
-            uf.stringValue = "\(shortenURL(note.url))  —  \(relativeTime(note.createdAt))"
-        }
-        if let db = cell.viewWithTag(99) as? NSButton {
-            db.identifier = NSUserInterfaceItemIdentifier("\(row)")
-        }
-
+        NSLayoutConstraint.activate(constraints)
         return cell
     }
 
-    func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat { rowHeight }
+    func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
+        guard row < filteredNotes.count else { return rowHeight }
+        return filteredNotes[row].hashtags.isEmpty ? rowHeight : rowHeightWithPills
+    }
 }

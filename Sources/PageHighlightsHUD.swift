@@ -154,39 +154,8 @@ final class PageNotesHUD: NSObject {
     }
 
     private func createPillsField(tags: [String]) -> NSTextField {
-        let result = NSMutableAttributedString()
-        let pillFont = NSFont.systemFont(ofSize: 9)
-
-        for (i, tag) in tags.enumerated() {
-            if i > 0 { result.append(NSAttributedString(string: " ")) }
-
-            let pillText = " \(tag) "
-            let textSize = (pillText as NSString).size(withAttributes: [.font: pillFont])
-            let pillSize = NSSize(width: textSize.width + 12, height: textSize.height + 6)
-
-            let pillImage = NSImage(size: pillSize, flipped: false) { rect in
-                let path = NSBezierPath(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5),
-                                        xRadius: rect.height / 2, yRadius: rect.height / 2)
-                NSColor(white: 0.0, alpha: 0.04).setFill()
-                path.fill()
-                NSColor(white: 0.0, alpha: 0.15).setStroke()
-                path.lineWidth = 1
-                path.stroke()
-                let textRect = NSRect(x: 6, y: 2, width: rect.width - 12, height: rect.height - 4)
-                pillText.draw(in: textRect, withAttributes: [
-                    .font: pillFont,
-                    .foregroundColor: NSColor.secondaryLabelColor,
-                ])
-                return true
-            }
-
-            let attachment = NSTextAttachment()
-            attachment.image = pillImage
-            attachment.bounds = NSRect(x: 0, y: -3, width: pillSize.width, height: pillSize.height)
-            result.append(NSAttributedString(attachment: attachment))
-        }
-
-        let field = NSTextField(labelWithAttributedString: result)
+        let attr = HashtagPill.attributedPills(for: tags, font: .systemFont(ofSize: 9))
+        let field = NSTextField(labelWithAttributedString: attr)
         field.lineBreakMode = .byWordWrapping
         field.maximumNumberOfLines = 0
         field.preferredMaxLayoutWidth = panelWidth - 40
@@ -381,31 +350,7 @@ func formatNoteWithHashtagPills(_ text: String) -> NSAttributedString {
     // Add pills on a new line
     if !tags.isEmpty {
         result.append(NSAttributedString(string: "\n", attributes: baseAttrs))
-        for (i, tag) in tags.enumerated() {
-            if i > 0 { result.append(NSAttributedString(string: " ", attributes: baseAttrs)) }
-
-            let pillFont = NSFont.systemFont(ofSize: 10)
-            let pillText = " \(tag) "
-            let textSize = (pillText as NSString).size(withAttributes: [.font: pillFont])
-            let pillSize = NSSize(width: textSize.width + 12, height: textSize.height + 6)
-
-            let pillImage = NSImage(size: pillSize, flipped: false) { rect in
-                let path = NSBezierPath(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5), xRadius: 10, yRadius: 10)
-                NSColor(white: 0.0, alpha: 0.04).setFill()
-                path.fill()
-                NSColor(white: 0.0, alpha: 0.15).setStroke()
-                path.lineWidth = 1
-                path.stroke()
-                let textRect = NSRect(x: 6, y: 2, width: rect.width - 12, height: rect.height - 4)
-                pillText.draw(in: textRect, withAttributes: [.font: pillFont, .foregroundColor: NSColor.secondaryLabelColor])
-                return true
-            }
-
-            let attachment = NSTextAttachment()
-            attachment.image = pillImage
-            attachment.bounds = NSRect(x: 0, y: -3, width: pillSize.width, height: pillSize.height)
-            result.append(NSAttributedString(attachment: attachment))
-        }
+        result.append(HashtagPill.attributedPills(for: tags, font: .systemFont(ofSize: 10)))
     }
 
     return result
