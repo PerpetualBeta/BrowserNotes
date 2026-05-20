@@ -96,11 +96,11 @@ final class NotesBrowserHUD: NSObject, HUDKeyPanelDelegate {
 
         // Leading inset clears the traffic-light cluster — the panel
         // uses .fullSizeContentView, so they sit inside the contentView.
-        // Leading inset clears the traffic-light cluster, top inset
-        // drops the field below the titlebar row — the panel uses
-        // .fullSizeContentView so the traffic lights occupy the top
-        // ~28px of the contentView.
-        searchField = NSTextField(frame: NSRect(x: 80, y: panelHeight - 68, width: panelWidth - 96, height: 28))
+        // Top inset drops the field below the titlebar row — the panel
+        // uses .fullSizeContentView so the traffic lights occupy the
+        // top ~28px of the contentView. Leading inset matches the
+        // favicon column below so the filter aligns with content.
+        searchField = NSTextField(frame: NSRect(x: 16, y: panelHeight - 68, width: panelWidth - 32, height: 28))
         searchField.placeholderString = "Filter notes..."
         searchField.font = .systemFont(ofSize: 14)
         searchField.isBordered = false
