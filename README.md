@@ -41,7 +41,9 @@ The HUD:
 
 ### Notes Browser
 
-Press **⌃⌥⇧⌘H** (Hyper+H) to open the Notes Browser — a searchable list of all your notes across all pages. Type to filter by note text, URL, or hashtag. Navigate with arrow keys and press Return to open the page in your current browser.
+Press **⌃⌥⇧⌘H** (Hyper+H) to open the Notes Browser — a searchable list of all your notes across all pages. The panel sizes to 80% of the active browser window each time it opens, so it scales with whatever you're working in. Each row shows the site's favicon, the note text, the URL, a relative timestamp, and the note's hashtag pills. Type to filter by note text, URL, or hashtag. Navigate with arrow keys and press Return to open the page in your current browser.
+
+Favicons are fetched on first sight via a three-tier resolver (the site's own `/favicon.ico`, then a parse of `<link rel="icon">` from the page's HTML, then a fallback through DuckDuckGo's icon service) and cached locally under Application Support — so subsequent opens are offline-fast.
 
 | Key | Action |
 |-----|--------|
@@ -56,7 +58,7 @@ Click the pencil icon on any note in the Page Notes HUD to open it for editing. 
 
 ### Hashtags
 
-Include `#hashtags` in your notes to categorise them. Tags are rendered as pills in the Page Notes HUD and are searchable in the Notes Browser.
+Include `#hashtags` in your notes to categorise them. Tags render as bold, uppercase, colour-coded pills in both the Page Notes HUD and the Notes Browser. The colour is derived from the tag itself (FNV-1a hash of the normalised tag to an HSL hue), so `#work` is the same colour wherever it appears, and the text colour inside each pill is picked by WCAG luminance for legibility against the fill. Hashtags are also searchable in the Notes Browser.
 
 ### Supported Browsers
 
@@ -89,11 +91,13 @@ Auto-updates are handled by Sparkle. Use the **Check for Updates…** entry in t
 | `HighlightHUDPanel.swift` | Notes Browser with filter, table view, delete, navigate |
 | `HighlightStore.swift` | Thread-safe SQLite store with URL normalisation and caching |
 | `HighlightModels.swift` | `SavedNote` model with computed hashtag extraction |
+| `FaviconCache.swift` | Three-tier favicon resolver + in-memory and disk cache |
+| `HashtagPill.swift` | Deterministic per-tag colour + shared pill renderer |
 | `SharedTypes.swift` | Browser bundle IDs, HUD panel delegate, tab navigation |
 
 ## Data Storage
 
-Notes are stored in `~/Library/Application Support/BrowserNotes/notes.db`. URLs are normalised (fragments stripped, trailing slashes cleaned) so notes survive minor URL variations.
+Notes are stored in `~/Library/Application Support/BrowserNotes/notes.db`. URLs are normalised (fragments stripped, trailing slashes cleaned) so notes survive minor URL variations. Favicons are cached as PNGs under the same Application Support folder, in a `favicons/` subdirectory — one file per host, plus a zero-byte sentinel for hosts that didn't resolve so the network isn't re-hit on every open.
 
 ## Building from Source
 
