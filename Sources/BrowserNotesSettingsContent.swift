@@ -61,6 +61,8 @@ struct BrowserNotesSettingsContent: View {
             }
         }
 
+        MenuBarVisibilitySettings()
+
         MenuBarPillSettings {
             delegate.refreshPill()
         }

@@ -8,7 +8,7 @@ import Sparkle
 @Observable
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
-    private var statusItem: NSStatusItem!
+    private var statusItem: NSStatusItem?
     let engine = BrowserNotesEngine()
 
     // @ObservationIgnored — @Observable's macro can't transform `lazy`,
@@ -66,13 +66,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         migrateLegacyPillColorKey()
 
         NSApp.setActivationPolicy(.accessory)
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        updateIcon()
+        createStatusItem()
         _ = sparkleUpdater  // forces lazy init so Sparkle starts at launch
-
-        let menu = NSMenu()
-        menu.delegate = self
-        statusItem.menu = menu
 
         engine.start()
 
@@ -93,6 +88,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ) { [weak self] _ in
             Task { @MainActor in self?.updateIcon() }
         }
+
+        // Create or remove the status item when the user toggles its
+        // visibility in Settings.
+        NotificationCenter.default.addObserver(
+            forName: JorvikStatusItemVisibility.didChangeNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.applyStatusItemVisibility() }
+        }
+    }
+
+    private func createStatusItem() {
+        guard JorvikStatusItemVisibility.isVisible else { return }
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let menu = NSMenu()
+        menu.delegate = self
+        item.menu = menu
+        statusItem = item
+        updateIcon()
+    }
+
+    func applyStatusItemVisibility() {
+        if JorvikStatusItemVisibility.isVisible {
+            if statusItem == nil { createStatusItem() }
+        } else if let item = statusItem {
+            NSStatusBar.system.removeStatusItem(item)
+            statusItem = nil
+        }
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        JorvikStatusItemVisibility.handleReopen()
+        return true
     }
 
     func applicationWillTerminate(_ notification: Notification) { engine.stop() }
@@ -109,7 +137,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func refreshPill() { updateIcon() }
 
     private func updateIcon() {
-        statusItem.button?.image = JorvikMenuBarPill.icon(
+        statusItem?.button?.image = JorvikMenuBarPill.icon(
             symbolName: "highlighter",
             accessibilityDescription: "Browser Notes"
         )
