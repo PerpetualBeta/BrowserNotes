@@ -32,7 +32,7 @@ Notes are stored locally in a SQLite database. Nothing leaves your machine.
 
 ### Adding a Note
 
-Press **⌃⌥⇧⌘N** (Hyper+N) while a browser is in focus to open the Add Note panel. Type your note — use `#hashtags` to categorise — and press Return.
+Press **⌃⌥⇧⌘N** (Hyper+N) while a browser is in focus to open the Add Note panel. Where the page has a usable title, the note is pre-filled with it — press Return to save it as-is, append to it, or select-all and type to replace it. Use `#hashtags` to categorise, and press Return to save.
 
 ### Page Notes HUD
 

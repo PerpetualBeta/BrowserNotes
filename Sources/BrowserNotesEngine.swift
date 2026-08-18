@@ -209,10 +209,12 @@ final class BrowserNotesEngine {
     // MARK: - Add Note
 
     private func showAddNote(bundleID: String, pid: pid_t) {
+        let browserName = NSRunningApplication(processIdentifier: pid)?.localizedName
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let url = AccessibilityReader.getCurrentURL(pid: pid) ?? ""
+            let pageTitle = AccessibilityReader.getPageTitle(pid: pid, browserName: browserName, url: url)
             DispatchQueue.main.async {
-                self?.addNoteHUD.show(url: url, browserPID: pid)
+                self?.addNoteHUD.show(url: url, pageTitle: pageTitle, browserPID: pid)
             }
         }
     }

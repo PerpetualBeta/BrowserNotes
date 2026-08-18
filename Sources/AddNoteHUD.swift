@@ -23,7 +23,7 @@ final class AddNoteHUD: NSObject {
     private let defaultHeight: CGFloat = 120
     private let chromeHeight: CGFloat = 105  // titlebar + URL + sep + hint + padding
 
-    func show(url: String, browserPID: pid_t) {
+    func show(url: String, pageTitle: String?, browserPID: pid_t) {
         self.currentURL = url
         self.browserPID = browserPID
         self.editingNoteID = nil
@@ -33,7 +33,8 @@ final class AddNoteHUD: NSObject {
         let shortURL = url.replacingOccurrences(of: "https://", with: "")
                           .replacingOccurrences(of: "http://", with: "")
         urlLabel.stringValue = shortURL.count > 55 ? String(shortURL.prefix(52)) + "..." : shortURL
-        noteTextView.string = ""
+        noteTextView.string = pageTitle ?? ""
+        noteTextView.setSelectedRange(NSRange(location: (noteTextView.string as NSString).length, length: 0))
         hintLabel.stringValue = "Enter to save \u{00B7} Escape to cancel"
 
         sizeToFitContent()

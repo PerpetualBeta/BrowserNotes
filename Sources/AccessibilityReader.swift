@@ -15,6 +15,63 @@ enum AccessibilityReader {
         return result
     }
 
+    /// Window-title suffixes browsers append after the page title
+    private static let browserSuffixNames: Set<String> = [
+        "Safari", "Safari Technology Preview",
+        "Google Chrome", "Google Chrome Canary", "Chromium",
+        "Microsoft Edge", "Brave", "Opera", "Vivaldi", "Arc", "Orion",
+        "Zen Browser",
+        "Mozilla Firefox", "Firefox Developer Edition", "Firefox Nightly",
+        "Mozilla Firefox Private Browsing", "Private Browsing",
+    ]
+
+    private static let titleSeparators = [" \u{2014} ", " \u{2013} ", " - "]  // em dash, en dash, hyphen
+
+    /// Titles browsers give pages that have no real title
+    private static let placeholderTitles: Set<String> = [
+        "new tab", "untitled", "start page", "about:blank",
+    ]
+
+    /// Reads the focused window's title — in every mainstream browser this is the
+    /// page title, sometimes suffixed with the browser's own name. Returns nil
+    /// when a usable page title can't be reliably extracted.
+    static func getPageTitle(pid: pid_t, browserName: String?, url: String) -> String? {
+        let axApp = AXUIElementCreateApplication(pid)
+        var windowVal: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &windowVal) == .success else {
+            return nil
+        }
+        var titleVal: CFTypeRef?
+        AXUIElementCopyAttributeValue(windowVal as! AXUIElement, kAXTitleAttribute as CFString, &titleVal)
+        guard let raw = titleVal as? String else { return nil }
+
+        var suffixes = browserSuffixNames
+        if let browserName, !browserName.isEmpty { suffixes.insert(browserName) }
+
+        var title = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        var stripped = true
+        while stripped {
+            stripped = false
+            for sep in titleSeparators {
+                for name in suffixes where title.hasSuffix(sep + name) {
+                    title = String(title.dropLast(sep.count + name.count))
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    stripped = true
+                }
+            }
+        }
+
+        guard !title.isEmpty, !placeholderTitles.contains(title.lowercased()) else { return nil }
+
+        // Some browsers title an untitled page with its URL — not a page title
+        let bareURL = url.replacingOccurrences(of: "https://", with: "")
+                         .replacingOccurrences(of: "http://", with: "")
+        if title.caseInsensitiveCompare(url) == .orderedSame { return nil }
+        if !bareURL.isEmpty, title.caseInsensitiveCompare(bareURL) == .orderedSame { return nil }
+
+        return title
+    }
+
     /// Returns the raw text from the address bar, even if it doesn't look like a URL
     static func getRawAddressBarText(pid: pid_t) -> String? {
         let axApp = AXUIElementCreateApplication(pid)
