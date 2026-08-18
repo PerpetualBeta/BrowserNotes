@@ -19,6 +19,13 @@ let browserBundleIDs: Set<String> = [
     "org.chromium.Chromium",
     "com.nickvision.nicegram",
     "app.zen-browser.zen",              // Zen Browser
+    "com.sigmaos.sigmaos.macos",        // SigmaOS
+    "org.mozilla.waterfox",             // Waterfox
+    "org.waterfoxproject.waterfox",     // Waterfox (older builds)
+    "io.gitlab.librewolf-community.librewolf",  // LibreWolf
+    "net.mullvad.mullvadbrowser",       // Mullvad Browser
+    "org.torproject.torbrowser",        // Tor Browser
+    "org.mozilla.tor browser",          // Tor Browser (older builds)
 ]
 
 /// AX roles that indicate the focused element is a text input

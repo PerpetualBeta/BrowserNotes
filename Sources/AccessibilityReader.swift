@@ -25,9 +25,10 @@ enum AccessibilityReader {
         "Safari", "Safari Technology Preview",
         "Google Chrome", "Google Chrome Canary", "Chromium",
         "Microsoft Edge", "Brave", "Opera", "Vivaldi", "Arc", "Orion",
-        "Zen Browser",
+        "Zen Browser", "SigmaOS",
         "Mozilla Firefox", "Firefox Developer Edition", "Firefox Nightly",
         "Mozilla Firefox Private Browsing", "Private Browsing",
+        "Waterfox", "LibreWolf", "Mullvad Browser", "Tor Browser",
     ]
 
     private static let titleSeparators = [" \u{2014} ", " \u{2013} ", " - "]  // em dash, en dash, hyphen
