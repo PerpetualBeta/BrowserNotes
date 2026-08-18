@@ -84,6 +84,7 @@ final class BrowserNotesEngine {
     private let addNoteHUD = AddNoteHUD()
     private let pageNotesHUD = PageNotesHUD()
     private var urlPollTimer: Timer?
+    private var urlPollInFlight = false
     private var lastKnownURL: String = ""
     private var pageNotesDismissedForURL: String = ""
 
@@ -244,6 +245,11 @@ final class BrowserNotesEngine {
             return
         }
 
+        // One poll at a time — a slow AX traversal must not stack up new
+        // polls behind it and starve the dispatch pool
+        guard !urlPollInFlight else { return }
+        urlPollInFlight = true
+
         let pid = frontApp.processIdentifier
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let rawText = AccessibilityReader.getRawAddressBarText(pid: pid)
@@ -254,6 +260,7 @@ final class BrowserNotesEngine {
 
             DispatchQueue.main.async {
                 guard let self else { return }
+                self.urlPollInFlight = false
                 let urlChanged = normURL != self.lastKnownURL
 
                 if urlChanged {

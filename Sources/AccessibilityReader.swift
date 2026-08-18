@@ -4,9 +4,14 @@ import ApplicationServices
 /// Reads browser URL via the Accessibility API — no JS injection required.
 enum AccessibilityReader {
 
+    /// AX messages to an unresponsive app block for 6 seconds each by default;
+    /// a stalled browser must not wedge a traversal for minutes.
+    private static let axMessagingTimeout: Float = 0.5
+
     /// Reads the current URL from the browser's address bar via AX tree traversal
     static func getCurrentURL(pid: pid_t) -> String? {
         let axApp = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(axApp, axMessagingTimeout)
         var windowVal: CFTypeRef?
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &windowVal) == .success else {
             return nil
@@ -37,6 +42,7 @@ enum AccessibilityReader {
     /// when a usable page title can't be reliably extracted.
     static func getPageTitle(pid: pid_t, browserName: String?, url: String) -> String? {
         let axApp = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(axApp, axMessagingTimeout)
         var windowVal: CFTypeRef?
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &windowVal) == .success else {
             return nil
@@ -75,6 +81,7 @@ enum AccessibilityReader {
     /// Returns the raw text from the address bar, even if it doesn't look like a URL
     static func getRawAddressBarText(pid: pid_t) -> String? {
         let axApp = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(axApp, axMessagingTimeout)
         var windowVal: CFTypeRef?
         guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &windowVal) == .success else {
             return nil
@@ -88,6 +95,11 @@ enum AccessibilityReader {
         var roleVal: CFTypeRef?
         AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleVal)
         let role = roleVal as? String ?? ""
+
+        // The address bar is browser chrome — never inside the page itself.
+        // Descending into AXWebArea crawls the whole web page's AX tree:
+        // thousands of IPC round-trips on a heavy page.
+        if role == "AXWebArea" { return nil }
 
         if role == "AXTextField" || role == "AXComboBox" {
             var valRef: CFTypeRef?
@@ -114,6 +126,11 @@ enum AccessibilityReader {
         var roleVal: CFTypeRef?
         AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleVal)
         let role = roleVal as? String ?? ""
+
+        // The address bar is browser chrome — never inside the page itself.
+        // Descending into AXWebArea crawls the whole web page's AX tree:
+        // thousands of IPC round-trips on a heavy page.
+        if role == "AXWebArea" { return nil }
 
         if role == "AXTextField" || role == "AXComboBox" {
             var valRef: CFTypeRef?
