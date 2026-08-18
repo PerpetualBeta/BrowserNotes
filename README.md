@@ -32,7 +32,7 @@ Notes are stored locally in a SQLite database. Nothing leaves your machine.
 
 ### Adding a Note
 
-Press **⌃⌥⇧⌘N** (Hyper+N) while a browser is in focus to open the Add Note panel. Where the page has a usable title, the note is pre-filled with it — press Return to save it as-is, append to it, or select-all and type to replace it. Use `#hashtags` to categorise, and press Return to save.
+Press `control` `option` `shift` `command` `N` (Hyper-N) while a browser is in focus to open the Add Note panel. Where the page has a usable title, the note is pre-filled with it — press Return to save it as-is, append to it, or select-all and type to replace it. Use `#hashtags` to categorise, and press Return to save.
 
 ### Page Notes HUD
 
@@ -47,7 +47,7 @@ The HUD:
 
 ### Notes Browser
 
-Press **⌃⌥⇧⌘H** (Hyper+H) to open the Notes Browser — a searchable list of all your notes across all pages. The panel sizes to 80% of the active browser window each time it opens, so it scales with whatever you're working in. Each row shows the site's favicon, the note text, the URL, a relative timestamp, and the note's hashtag pills. Type to filter by note text, URL, or hashtag. Navigate with arrow keys and press Return to open the page in your current browser.
+Press `control` `option` `shift` `command` `H` (Hyper-H) to open the Notes Browser — a searchable list of all your notes across all pages. The panel sizes to 80% of the active browser window each time it opens, so it scales with whatever you're working in. Each row shows the site's favicon, the note text, the URL, a relative timestamp, and the note's hashtag pills. Type to filter by note text, URL, or hashtag. Navigate with arrow keys and press Return to open the page in your current browser.
 
 Favicons are fetched on first sight via a three-tier resolver (the site's own `/favicon.ico`, then a parse of `<link rel="icon">` from the page's HTML, then a fallback through DuckDuckGo's icon service) and cached locally under Application Support — so subsequent opens are offline-fast.
 
@@ -74,8 +74,8 @@ Safari, Chrome, Edge, Firefox, Arc, Brave, Opera, Vivaldi, Orion, Chromium, Zen,
 
 Right-click the globe icon and choose **Settings...** to configure:
 
-- **Notes Browser hotkey** — customise the global hotkey (default: ⌃⌥⇧⌘H)
-- **Add Note hotkey** — customise the global hotkey (default: ⌃⌥⇧⌘N)
+- **Notes Browser hotkey** — customise the global hotkey (default: `control` `option` `shift` `command` `H`)
+- **Add Note hotkey** — customise the global hotkey (default: `control` `option` `shift` `command` `N`)
 - **Accessibility permission** — status display and grant button
 - **Show icon in menu bar** — hide the menu-bar globe icon while Browser Notes keeps running; it remains reachable via its keyboard shortcuts. Your choice persists across launches, including login auto-start. *Shown only on macOS 14–15 — on macOS 26 (Tahoe) and later, use System Settings → Menu Bar, which provides this natively.*
 - **Menu bar icon pill** — optional grey background for stronger contrast on busy or wallpaper-tinted menu bars (off by default)
