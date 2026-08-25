@@ -53,9 +53,9 @@ Favicons are fetched on first sight via a three-tier resolver (the site's own `/
 
 | Key | Action |
 |-----|--------|
-| **↑** / **↓** | Navigate notes |
-| **Return** | Open page in browser |
-| **Escape** | Dismiss |
+| `up` / `down` | Navigate notes |
+| `return` | Open page in browser |
+| `esc` | Dismiss |
 | **Type** | Filter notes |
 
 ### Editing Notes
