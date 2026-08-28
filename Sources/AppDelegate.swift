@@ -63,6 +63,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // The App scene replaces the Settings command group, so Command+, can no
+        // longer open the empty placeholder window; this takes out the separator
+        // that removing the "Settings…" item leaves behind.
+        JorvikApplicationMenu.removeRedundantSeparators()
+
         migrateLegacyPillColorKey()
 
         NSApp.setActivationPolicy(.accessory)

@@ -26,11 +26,11 @@ private func markerCallback(
 ) -> Unmanaged<CGEvent>? {
     if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
         if let tap = _markerTap { CGEvent.tapEnable(tap: tap, enable: true) }
-        return Unmanaged.passRetained(event)
+        return Unmanaged.passUnretained(event)
     }
 
     guard _isEnabled, type == .keyDown else {
-        return Unmanaged.passRetained(event)
+        return Unmanaged.passUnretained(event)
     }
 
     let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
@@ -41,7 +41,7 @@ private func markerCallback(
           let bundleID = frontApp.bundleIdentifier,
           browserBundleIDs.contains(bundleID)
     else {
-        return Unmanaged.passRetained(event)
+        return Unmanaged.passUnretained(event)
     }
 
     // Notes Browser hotkey
@@ -61,7 +61,7 @@ private func markerCallback(
         return nil
     }
 
-    return Unmanaged.passRetained(event)
+    return Unmanaged.passUnretained(event)
 }
 
 // MARK: - BrowserNotesEngine
