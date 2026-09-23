@@ -76,6 +76,8 @@ Right-click the globe icon and choose **Settings...** to configure:
 
 - **Notes Browser hotkey** — customise the global hotkey (default: `control` `option` `shift` `command` `H`)
 - **Add Note hotkey** — customise the global hotkey (default: `control` `option` `shift` `command` `N`)
+
+Either hotkey can be cleared as well as changed. A cleared hotkey turns that feature off: nothing is bound, so nothing is intercepted, and it stops appearing in ShortcutHUD's list.
 - **Accessibility permission** — status display and grant button
 - **Show icon in menu bar** — hide the menu-bar globe icon while Browser Notes keeps running; it remains reachable via its keyboard shortcuts. Your choice persists across launches, including login auto-start. *Shown only on macOS 14–15 — on macOS 26 (Tahoe) and later, use System Settings → Menu Bar, which provides this natively.*
 - **Menu bar icon pill** — optional grey background for stronger contrast on busy or wallpaper-tinted menu bars (off by default)

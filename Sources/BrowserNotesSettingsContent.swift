@@ -24,6 +24,11 @@ struct BrowserNotesSettingsContent: View {
                 ),
                 displayString: { delegate.addNoteShortcutDisplayString() },
                 onChanged: nil,
+                onClear: {
+                    // Both halves. The property setters persist and re-publish.
+                    delegate.addNoteKeyCode = 0
+                    delegate.addNoteModifiers = []
+                },
                 eventTapToDisable: nil
             )
 
@@ -39,6 +44,11 @@ struct BrowserNotesSettingsContent: View {
                 ),
                 displayString: { delegate.notesBrowserShortcutDisplayString() },
                 onChanged: nil,
+                onClear: {
+                    // Both halves. The property setters persist and re-publish.
+                    delegate.notesBrowserKeyCode = 0
+                    delegate.notesBrowserModifiers = []
+                },
                 eventTapToDisable: nil
             )
         }

@@ -6,6 +6,17 @@ import ApplicationServices
 private var _markerTap: CFMachPort?
 var _isEnabled: Bool = true
 private var _onAction: ((MarkerAction) -> Void)?
+/// Whether a binding is set at all.
+///
+/// Shortcuts can be cleared from Settings, and a cleared one is stored as key
+/// code 0 with no modifiers. **Key code 0 is the letter A.** Both matches below
+/// use `modifiers.contains(...)`, and `contains([])` is true for every
+/// keystroke, so without this a cleared shortcut would fire on every A typed in
+/// a browser. Same guard as BrowserCommander, for the same reason.
+private func isBound(_ keyCode: UInt16, _ modifiers: NSEvent.ModifierFlags) -> Bool {
+    keyCode != 0 || !modifiers.intersection([.command, .control, .option, .shift]).isEmpty
+}
+
 private var _notesBrowserKeyCode: UInt16 = 4   // H
 private var _notesBrowserModifiers: NSEvent.ModifierFlags = [.command, .control, .option, .shift]
 private var _addNoteKeyCode: UInt16 = 45        // N
@@ -46,7 +57,8 @@ private func markerCallback(
 
     // Notes Browser hotkey
     let nbMods = _notesBrowserModifiers.intersection([.command, .control, .option, .shift])
-    if keyCode == _notesBrowserKeyCode && modifiers.contains(nbMods) {
+    if isBound(_notesBrowserKeyCode, _notesBrowserModifiers)
+        && keyCode == _notesBrowserKeyCode && modifiers.contains(nbMods) {
         let pid = frontApp.processIdentifier
         DispatchQueue.main.async { _onAction?(.showNotesBrowser(pid: pid)) }
         return nil
@@ -54,7 +66,8 @@ private func markerCallback(
 
     // Add Note hotkey
     let anMods = _addNoteModifiers.intersection([.command, .control, .option, .shift])
-    if keyCode == _addNoteKeyCode && modifiers.contains(anMods) {
+    if isBound(_addNoteKeyCode, _addNoteModifiers)
+        && keyCode == _addNoteKeyCode && modifiers.contains(anMods) {
         let pid = frontApp.processIdentifier
         let bid = bundleID
         DispatchQueue.main.async { _onAction?(.addNote(bundleID: bid, pid: pid)) }
@@ -102,16 +115,22 @@ final class BrowserNotesEngine {
 
     /// Publish current bindings to the JorvikKit registry. Both are browser-only.
     private func republishHotkeys() {
-        JorvikHotkeyRegistry.publish([
-            JorvikHotkey(actionTitle: "Open Notes Browser",
-                         keyCode: _notesBrowserKeyCode,
-                         modifiers: _notesBrowserModifiers,
-                         activeContext: .browser),
-            JorvikHotkey(actionTitle: "Add Note for Page",
-                         keyCode: _addNoteKeyCode,
-                         modifiers: _addNoteModifiers,
-                         activeContext: .browser),
-        ])
+        // Cleared bindings are left out rather than published as key code 0,
+        // which ShortcutHUD would otherwise list as the letter A.
+        var all: [JorvikHotkey] = []
+        if isBound(_notesBrowserKeyCode, _notesBrowserModifiers) {
+            all.append(JorvikHotkey(actionTitle: "Open Notes Browser",
+                                    keyCode: _notesBrowserKeyCode,
+                                    modifiers: _notesBrowserModifiers,
+                                    activeContext: .browser))
+        }
+        if isBound(_addNoteKeyCode, _addNoteModifiers) {
+            all.append(JorvikHotkey(actionTitle: "Add Note for Page",
+                                    keyCode: _addNoteKeyCode,
+                                    modifiers: _addNoteModifiers,
+                                    activeContext: .browser))
+        }
+        JorvikHotkeyRegistry.publish(all)
     }
 
     func start() {
@@ -143,8 +162,8 @@ final class BrowserNotesEngine {
             self.addNoteHUD.showForEdit(note: note, browserPID: frontApp.processIdentifier)
         }
 
-        _onAction = { action in
-            DispatchQueue.main.async { [weak self] in
+        _onAction = { [weak self] action in
+            DispatchQueue.main.async {
                 guard let self else { return }
                 switch action {
                 case .showNotesBrowser(let pid):

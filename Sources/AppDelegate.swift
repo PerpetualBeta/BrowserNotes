@@ -152,11 +152,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func notesBrowserShortcutDisplayString() -> String {
-        JorvikShortcutPanel.displayString(keyCode: notesBrowserKeyCode, modifiers: notesBrowserModifiers)
+        // Say so rather than rendering key code 0 as the letter A.
+        guard notesBrowserKeyCode != 0 || !notesBrowserModifiers.isEmpty else { return "Not set" }
+        return JorvikShortcutPanel.displayString(keyCode: notesBrowserKeyCode, modifiers: notesBrowserModifiers)
     }
 
     func addNoteShortcutDisplayString() -> String {
-        JorvikShortcutPanel.displayString(keyCode: addNoteKeyCode, modifiers: addNoteModifiers)
+        // Say so rather than rendering key code 0 as the letter A.
+        guard addNoteKeyCode != 0 || !addNoteModifiers.isEmpty else { return "Not set" }
+        return JorvikShortcutPanel.displayString(keyCode: addNoteKeyCode, modifiers: addNoteModifiers)
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
