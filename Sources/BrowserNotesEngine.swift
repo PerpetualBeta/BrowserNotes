@@ -17,6 +17,16 @@ private func isBound(_ keyCode: UInt16, _ modifiers: NSEvent.ModifierFlags) -> B
     keyCode != 0 || !modifiers.intersection([.command, .control, .option, .shift]).isEmpty
 }
 
+/// Whether the modifiers held satisfy the ones the shortcut needs.
+///
+/// A function key can be recorded with no modifier, and `contains([])` is true
+/// for every set, so a bare F5 binding would also fire on command-F5, which is
+/// the VoiceOver toggle. A bare binding therefore needs no modifier held. A
+/// binding with modifiers keeps the `contains` test it always had.
+private func modifiersMatch(_ held: NSEvent.ModifierFlags, _ required: NSEvent.ModifierFlags) -> Bool {
+    required.isEmpty ? held.isEmpty : held.contains(required)
+}
+
 private var _notesBrowserKeyCode: UInt16 = 4   // H
 private var _notesBrowserModifiers: NSEvent.ModifierFlags = [.command, .control, .option, .shift]
 private var _addNoteKeyCode: UInt16 = 45        // N
@@ -58,7 +68,7 @@ private func markerCallback(
     // Notes Browser hotkey
     let nbMods = _notesBrowserModifiers.intersection([.command, .control, .option, .shift])
     if isBound(_notesBrowserKeyCode, _notesBrowserModifiers)
-        && keyCode == _notesBrowserKeyCode && modifiers.contains(nbMods) {
+        && keyCode == _notesBrowserKeyCode && modifiersMatch(modifiers, nbMods) {
         let pid = frontApp.processIdentifier
         DispatchQueue.main.async { _onAction?(.showNotesBrowser(pid: pid)) }
         return nil
@@ -67,7 +77,7 @@ private func markerCallback(
     // Add Note hotkey
     let anMods = _addNoteModifiers.intersection([.command, .control, .option, .shift])
     if isBound(_addNoteKeyCode, _addNoteModifiers)
-        && keyCode == _addNoteKeyCode && modifiers.contains(anMods) {
+        && keyCode == _addNoteKeyCode && modifiersMatch(modifiers, anMods) {
         let pid = frontApp.processIdentifier
         let bid = bundleID
         DispatchQueue.main.async { _onAction?(.addNote(bundleID: bid, pid: pid)) }
