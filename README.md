@@ -26,9 +26,12 @@ After installation:
 
 ## How It Works
 
-Browser Notes reads the current URL from your browser's address bar using the macOS Accessibility API. No browser extensions, no JavaScript injection, no network requests — it works with any browser that exposes a standard address bar.
+Browser Notes reads the current URL from your browser's address bar using the macOS Accessibility API. There is no browser extension and no JavaScript injection, so it works with any browser that exposes a standard address bar. When you open a note from the Notes Browser, Browser Notes asks the browser to load that address with a one-line AppleScript command.
 
-Notes are stored locally in a SQLite database. Nothing leaves your machine.
+Notes are stored locally in a SQLite database and never leave your machine. Browser Notes makes two kinds of network request:
+
+- **Site icons.** The Notes Browser shows each site's icon. To fetch it, Browser Notes sends only the site's name, never the page address: it asks the site itself first, then DuckDuckGo's icon service, and caches the answer so each site is asked once.
+- **Updates.** Once a day, Sparkle checks jorviksoftware.cc for a new version. It sends no system profile.
 
 ### Adding a Note
 
